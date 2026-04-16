@@ -13,6 +13,9 @@ import com.guessgame.client.command.ServerCommand;
 import com.guessgame.client.command.ServerResponse;
 import com.guessgame.client.command.CommandFactory;
 
+import com.guessgame.client.p2p.P2PManager;
+import com.guessgame.client.logic.GameLogic;
+
 public class App
 {
     public static StringBuilder inputBuilder = new StringBuilder();
@@ -61,8 +64,6 @@ public class App
         }
         Command command = CommandFactory.getInstance().createCommand(parts[1], args);
         command.execute();
-        NetworkManager.getInstance().sendCommand(command.dump());
-
     }
 
     public static void main(String[] args)
