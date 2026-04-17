@@ -7,18 +7,23 @@ import java.util.*;
 
 public class Main {
 
-    static Map<String, PlayerInfo> players = new HashMap<>();
-    static Map<String, List<PlayerInfo>> rooms = new HashMap<>();
+    // room -> joueurs
+    private static Map<String, List<PlayerInfo>> rooms = new HashMap<>();
+
+    // socket -> infos joueur
+    private static Map<Socket, PlayerInfo> connectedPlayers = new HashMap<>();
+
 
     public static void main(String[] args) {
+
         try {
-            ServerSocket server = new ServerSocket(1234);
+            ServerSocket server = new ServerSocket(8080);
+
             System.out.println("Serveur lancé...");
 
             while (true) {
                 Socket client = server.accept();
                 System.out.println("Client connecté : " + client);
-
                 new Thread(() -> handleClient(client)).start();
             }
 
@@ -26,6 +31,7 @@ public class Main {
             e.printStackTrace();
         }
     }
+
 
     private static void handleClient(Socket client) {
         try {
@@ -35,58 +41,78 @@ public class Main {
             String message;
 
             while ((message = in.readLine()) != null) {
-
                 System.out.println("Message reçu : " + message);
-
-                if (!message.startsWith("GG|")) continue;
-
+                if (!message.startsWith("GG|")) {
+                    continue;
+                }
                 String[] parts = message.split("\\|");
                 String command = parts[1];
-
                 switch (command) {
-
                     case "CONNECT":
                         String username = parts[2];
                         int p2pPort = Integer.parseInt(parts[3]);
                         String ip = client.getInetAddress().getHostAddress();
+                        PlayerInfo player = new PlayerInfo(
+                                username,
+                                ip,
+                                p2pPort,
+                                client
+                                );
+                        connectedPlayers.put(client, player);
 
-                        PlayerInfo player = new PlayerInfo(username, ip, p2pPort, client);
-                        players.put(username, player);
+                        System.out.println(
+                                "CONNECT : "
+                                + username
+                                + " / "
+                                + ip
+                                + ":"
+                                + p2pPort
+                                );
 
-                        System.out.println("CONNECT : " + username);
                         break;
 
                     case "CREATE_ROOM":
                         String roomCreate = parts[2];
-
                         if (!rooms.containsKey(roomCreate)) {
                             rooms.put(roomCreate, new ArrayList<>());
-                            System.out.println("CREATE_ROOM : " + roomCreate);
+                            PlayerInfo joueur = connectedPlayers.get(client);
+                            rooms.get(roomCreate).add(joueur);
+                            System.out.println(
+                                    "CREATE_ROOM : "
+                                    + roomCreate
+                                    );
+                        } else {
+                            System.out.println(
+                                    "Room déjà existante : "
+                                    + roomCreate
+                                    );
                         }
                         break;
 
                     case "JOIN_ROOM":
                         String roomJoin = parts[2];
-                        String joueurJoin = parts[3];
-
                         if (rooms.containsKey(roomJoin)) {
-                            rooms.get(roomJoin).add(players.get(joueurJoin));
-                            System.out.println("JOIN_ROOM : " + roomJoin);
+                            PlayerInfo joueur = connectedPlayers.get(client);
+                            rooms.get(roomJoin).add(joueur);
+                            System.out.println(
+                                    "JOIN_ROOM : "
+                                    + roomJoin
+                                    );
+                        } else {
+                            System.out.println(
+                                    "Room inexistante : "
+                                    + roomJoin
+                                    );
                         }
                         break;
 
                     case "LEAVE_ROOM":
-                        String joueurLeave = parts[2];
-
                         for (String room : rooms.keySet()) {
-                            rooms.get(room).remove(players.get(joueurLeave));
+                            rooms.get(room).remove(
+                                    connectedPlayers.get(client)
+                                    );
                         }
-
                         System.out.println("LEAVE_ROOM");
-                        break;
-
-                    case "LIST_ROOMS":
-                        System.out.println("LIST_ROOMS : " + rooms.keySet());
                         break;
 
                     case "START_GAME":
@@ -102,9 +128,9 @@ public class Main {
 
                                 liste.append(
                                         p.username + ":" +
-                                                p.ip + ":" +
-                                                p.p2pPort
-                                );
+                                        p.ip + ":" +
+                                        p.p2pPort
+                                        );
                             }
 
                             String msg = "GG|GAME_STARTED|" + nomSalle + "|" + liste;
@@ -117,14 +143,26 @@ public class Main {
                         }
                         break;
 
+                    case "LIST_ROOMS":
+                        System.out.println(
+                                "LIST_ROOMS : "
+                                + rooms.keySet()
+                                );
+                        break;
+
                     default:
-                        System.out.println("Commande inconnue");
+                        System.out.println(
+                                "Commande inconnue"
+                                );
                         break;
                 }
             }
 
         } catch (Exception e) {
+
             System.out.println("Client déconnecté");
+
+            connectedPlayers.remove(client);
         }
     }
 }

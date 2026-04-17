@@ -68,9 +68,6 @@ public class App
 
     public static void main(String[] args)
     {
-        TCPClient client = new TCPClient("localhost", 8080);
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         while (true) {
             String line;
             try {

@@ -52,10 +52,6 @@ public class NetworkManager {
             return null;
         }
         buffer.flip();
-        if (buffer.hasArray()) {
-            System.out.println(Arrays.toString(buffer.array()));
-        }
-
         String s = StandardCharsets.US_ASCII.decode(buffer).toString();
         return s;
     }
