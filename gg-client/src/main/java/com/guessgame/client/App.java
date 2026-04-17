@@ -9,6 +9,7 @@ import com.guessgame.client.manager.RoomManager;
 
 import com.guessgame.client.socket.TCPClient;
 import com.guessgame.client.command.Command;
+import com.guessgame.client.command.Response;
 import com.guessgame.client.command.ServerCommand;
 import com.guessgame.client.command.ServerResponse;
 import com.guessgame.client.command.CommandFactory;
@@ -54,6 +55,7 @@ public class App
     }
 
     public static void parseResponse(String response) {
+        response = response.trim();
         String[] parts = response.split("\\|");
         if (parts.length < 2 || !parts[0].equals("GG")) {
             throw new IllegalArgumentException("Invalid command format");
@@ -62,7 +64,7 @@ public class App
         for (int i = 2; i < parts.length; i++) {
             args[i - 2] = parts[i];
         }
-        Command command = CommandFactory.getInstance().createCommand(parts[1], args);
+        Response command = CommandFactory.getInstance().createResponse(parts[1], args);
         command.execute();
     }
 
@@ -78,7 +80,7 @@ public class App
                 NetworkManager.getInstance().flush();
                 String response = NetworkManager.getInstance().receiveResponse();
                 if (response != null) {
-                    Logger.getInstance().debug("Received response: " + response);
+                    parseResponse(response);
                 }
             } catch (Exception e) {
                 ExceptionManager.handle(e);

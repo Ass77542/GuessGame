@@ -94,21 +94,28 @@ public class ServerResponse {
 
 
      public static class GameStarted implements Response {
-        private String players;
+         private String roomName;
+         private String players;
 
         public GameStarted(/* let empty */) {}
 
         @Override
         public void setArgs(String[] args) {
             try {
-                players = args[0];
+                roomName = args[0];
+                players = args[1];
             } catch (ArrayIndexOutOfBoundsException e) {
                 throw new IllegalArgumentException("Bad server response");
             }
         }
         @Override
         public void execute() {
+            RoomManager.getInstance().p2pManager.startAccepting();
+            Logger.getInstance().info("Game started with players: " + players);
             List<String> playerEntries = Arrays.asList(players.split(","));
+            for (String player: playerEntries) {
+                Logger.getInstance().info("Player: " + player);
+            }
 
             RoomManager.getInstance().p2pManager.connectToPlayers(playerEntries);
         }
