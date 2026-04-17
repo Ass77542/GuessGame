@@ -1,0 +1,47 @@
+name: Nightly Release
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+
+    - name: Archive artifact
+      run: zip -r targets.zip gg-client/target/*.jar gg-server/target/*.jar
+
+    - name: Get current date
+      id: date
+      run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v3
+      with:
+        tag_name: 'nightly-${{ steps.date.outputs.date }}'
+        name: 'Nightly Release ${{ steps.date.outputs.date }}'
+        body: 'This is the nightly release for ${{ steps.date.outputs.date }}.'
+        draft: false
+        prerelease: true
+        files: |
+          targets.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
