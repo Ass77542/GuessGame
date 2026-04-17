@@ -3,6 +3,8 @@ package com.guessgame.client.command;
 import com.guessgame.client.manager.NetworkManager;
 import com.guessgame.client.manager.RoomManager;
 
+import com.guessgame.client.p2p.P2PManager;
+
 public class ServerCommand {
     public static class Connect implements Command {
         private Class<? extends Response> responseClass = ServerResponse.Connected.class;
@@ -21,6 +23,7 @@ public class ServerCommand {
         public void execute() {
             NetworkManager.getInstance().setConnectionInfo("localhost", 8080);
             NetworkManager.getInstance().connect();
+            RoomManager.getInstance().setClientName(player_name);
         }
 
         public void setResponse(Response response) {
@@ -32,7 +35,13 @@ public class ServerCommand {
 
         @Override
         public String dump() {
-            String command = String.format("GG|CONNECT|%s\n", player_name);
+            try {
+                RoomManager.getInstance().p2pManager = new P2PManager(player_name, null);
+            } catch (Exception e) {
+                return "";
+            }
+            int port = RoomManager.getInstance().p2pManager.getListeningPort();
+            String command = String.format("GG|CONNECT|%s|%d\n", player_name, port);
             return command;
         }
     }
@@ -55,7 +64,6 @@ public class ServerCommand {
                 room_name = args[0];
                 max_players = Integer.parseInt(args[1]);
                 max_rounds = Integer.parseInt(args[2]);
-
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Invalid number format for max_players or max_rounds");
             } catch (ArrayIndexOutOfBoundsException e) {
@@ -305,4 +313,37 @@ public class ServerCommand {
         }
     }
     // Create other game commands
+
+
+
+
+    //
+    public static class GuessSecret implements Command {
+        public GuessSecret() {}
+
+        private String[] guess;
+
+        @Override
+        public void setArgs(String[] args) {
+            try {
+                guess = args;
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw new IllegalArgumentException("Not enough arguments for StartGame command");
+            }
+        }
+
+        @Override
+        public void execute() {
+            RoomManager.getInstance().getHostRoom().gameController.sendGuess(guess);
+        }
+
+        @Override
+        public void setResponse(Response response) {
+        }
+
+        @Override
+        public String dump() {
+            return "";
+        }
+    }
 }

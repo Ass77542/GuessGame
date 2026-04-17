@@ -1,5 +1,13 @@
 package com.guessgame.client.command;
 
+import com.guessgame.client.manager.RoomManager;
+import com.guessgame.client.Logger;
+
+import com.guessgame.client.p2p.*;
+
+import java.util.Arrays;
+import java.util.List;
+
 public class ServerResponse {
     public static class Connected implements Response {
         public Connected() {}
@@ -18,7 +26,9 @@ public class ServerResponse {
         @Override
         public void setArgs(String[] args) {}
         @Override
-        public void execute() {}
+        public void execute() {
+            Logger.getInstance().info("Room created successfully.");
+        }
     };
 
 
@@ -26,10 +36,22 @@ public class ServerResponse {
     public static class RoomList implements Response {
         public RoomList(/* let empty */) {}
 
+        public String[] rooms;
+
         @Override
-        public void setArgs(String[] args) {}
+        public void setArgs(String[] args) {
+            rooms = args;
+        }
         @Override
-        public void execute() {}
+        public void execute() {
+            StringBuilder sb = new StringBuilder("Available rooms:\n");
+            RoomManager.getInstance().clearRoom();
+            for (String room : rooms) {
+                sb.append("- ").append(room).append("\n");
+                RoomManager.getInstance().addRoom(room);
+            }
+            Logger.getInstance().info(sb.toString());
+        }
     }
 
 
@@ -40,7 +62,9 @@ public class ServerResponse {
         @Override
         public void setArgs(String[] args) {}
         @Override
-        public void execute() {}
+        public void execute() {
+            Logger.getInstance().info("Joined room successfully.");
+        }
     };
 
 
@@ -51,7 +75,9 @@ public class ServerResponse {
         @Override
         public void setArgs(String[] args) {}
         @Override
-        public void execute() {}
+        public void execute() {
+            Logger.getInstance().info("Left room successfully.");
+        }
     };
 
 
@@ -68,12 +94,24 @@ public class ServerResponse {
 
 
      public static class GameStarted implements Response {
+        private String players;
+
         public GameStarted(/* let empty */) {}
 
         @Override
-        public void setArgs(String[] args) {}
+        public void setArgs(String[] args) {
+            try {
+                players = args[0];
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw new IllegalArgumentException("Bad server response");
+            }
+        }
         @Override
-        public void execute() {}
+        public void execute() {
+            List<String> playerEntries = Arrays.asList(players.split(","));
+
+            RoomManager.getInstance().p2pManager.connectToPlayers(playerEntries);
+        }
      };
 
 

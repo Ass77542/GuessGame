@@ -110,7 +110,6 @@ public class RingBuffer {
         ByteBuffer message = ByteBuffer.allocate(length);
         for (int i = 0; i < length; i++) {
             message.put(buffer[readHead]);
-            System.out.println("Read byte: " + buffer[readHead]);
             readHead = (readHead + 1) % capacity;
         }
         return message;

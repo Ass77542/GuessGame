@@ -102,7 +102,8 @@ public class TCPClient {
                 socket.getOutputStream().flush();
                 writeBuffer.incReadHead(bytesToWrite);
             }
-            tempBuffer.clear();
+
+            tempBuffer = ByteBuffer.allocate(readBuffer.getCapacity());
 
             int available = socket.getInputStream().available();
             if (available > 0) {

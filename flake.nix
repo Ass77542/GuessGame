@@ -16,7 +16,7 @@
         version = "0.1.0";
         src = ./.;
 
-        jdk = pkgs.jdk8;
+        jdk = pkgs.jdk21;
         mvnHash = "sha256-ybaqpMdF6GcmVvybg6kc5z7QOB7EBrpxqrLGehg3fy4=";
 
         installPhase = ''
@@ -29,7 +29,7 @@
 
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = [
-          pkgs.jdk8
+          pkgs.jdk21
           pkgs.maven
         ];
         shellHook = ''
