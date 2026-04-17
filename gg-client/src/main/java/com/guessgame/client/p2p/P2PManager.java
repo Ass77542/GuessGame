@@ -1,5 +1,7 @@
 package com.guessgame.client.p2p;
 
+import com.guessgame.client.Logger;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -156,7 +158,7 @@ public class P2PManager {
      * @param playerEntries Liste au format ["nom:ip:port", ...]
      */
     public void connectToPlayers(List<String> playerEntries) {
-        System.out.println("[P2PManager] Établissement des connexions P2P...");
+        Logger.getInstance().info("[P2PManager] Établissement des connexions P2P...");
         for (String entry : playerEntries) {
             String[] parts = entry.split(":");
             if (parts.length == 3) {

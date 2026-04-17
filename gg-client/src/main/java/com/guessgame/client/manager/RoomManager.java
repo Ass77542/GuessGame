@@ -53,15 +53,7 @@ public class RoomManager {
             this.maxRounds = maxRounds;
             gameLogic = new GameLogic(maxRounds);
 
-            try {
-                // TODO change by real name
-                p2pManager = new P2PManager("oui", null);
-                p2pManager.startAccepting();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to init P2P manager");
-            }
             gameController = new GameController("oui", p2pManager, new DummyUI("oui") {
-
             });
 
 

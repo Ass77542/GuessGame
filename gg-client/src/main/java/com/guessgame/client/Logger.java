@@ -16,6 +16,8 @@ public class Logger {
     private static Logger instance;
     private FileWriter fileWriter;
 
+    private boolean bShowDebug;
+
     private Logger() {
         try {
             fileWriter = new FileWriter("client.log", true);
@@ -55,8 +57,14 @@ public class Logger {
         }
     }
 
+    public void showDebug(boolean show) {
+        this.bShowDebug = show;
+    }
+
     public void debug(String message) {
-        log(LogLevel.DEBUG, "\u001B[34m", message);
+        if (bShowDebug) {
+            log(LogLevel.DEBUG, "\u001B[34m", message);
+        }
     }
 
     public void info(String message) {
