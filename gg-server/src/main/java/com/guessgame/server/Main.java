@@ -5,10 +5,26 @@ import java.net.Socket;
 import java.io.*;
 import java.util.*;
 
+class Room {
+    public int maxPlayers;
+    public int maxRounds;
+    public List<PlayerInfo> players;
+
+    public Room() {
+        this.players = new ArrayList<>();
+    }
+
+    public Room(int maxPlayers, int maxRounds) {
+        this.maxPlayers = maxPlayers;
+        this.maxRounds = maxRounds;
+        this.players = new ArrayList<>();
+    }
+};
+
 public class Main {
 
     // room -> joueurs
-    private static Map<String, List<PlayerInfo>> rooms = new HashMap<>();
+    private static Map<String, Room> rooms = new HashMap<>();
 
     // socket -> infos joueur
     private static Map<Socket, PlayerInfo> connectedPlayers = new HashMap<>();
@@ -73,14 +89,18 @@ public class Main {
 
                     case "CREATE_ROOM":
                         String roomCreate = parts[2];
+                        int maxPlayers = Integer.parseInt(parts[3]);
+                        int maxRounds = Integer.parseInt(parts[4]);
                         if (!rooms.containsKey(roomCreate)) {
-                            rooms.put(roomCreate, new ArrayList<>());
+                            rooms.put(roomCreate, new Room(maxPlayers, maxRounds));
                             PlayerInfo joueur = connectedPlayers.get(client);
-                            rooms.get(roomCreate).add(joueur);
-                            System.out.println(
-                                    "CREATE_ROOM : "
-                                    + roomCreate
-                                    );
+                            rooms.get(roomCreate).players.add(joueur);
+
+                            StringBuilder sb = new StringBuilder();
+                            sb.append("GG|ROOM_CREATED|").append(roomCreate);
+                            joueur.send(sb.toString());
+                            System.out.println(String.format("CREATE_ROOM : %s (%s)", roomCreate, sb.toString()));
+
                         } else {
                             System.out.println(
                                     "Room déjà existante : "
@@ -93,11 +113,13 @@ public class Main {
                         String roomJoin = parts[2];
                         if (rooms.containsKey(roomJoin)) {
                             PlayerInfo joueur = connectedPlayers.get(client);
-                            rooms.get(roomJoin).add(joueur);
-                            System.out.println(
-                                    "JOIN_ROOM : "
-                                    + roomJoin
-                                    );
+                            Room room = rooms.get(roomJoin);
+                            room.players.add(joueur);
+
+                            String response = String.format("GG|JOINED_ROOM|%s|%d|%d", roomJoin, room.maxPlayers, room.maxRounds);
+                            joueur.send(response);
+
+                            System.out.println("JOIN_ROOM : " + roomJoin);
                         } else {
                             System.out.println(
                                     "Room inexistante : "
@@ -107,17 +129,19 @@ public class Main {
                         break;
 
                     case "LEAVE_ROOM":
+                        PlayerInfo joueur = connectedPlayers.get(client);
                         for (String room : rooms.keySet()) {
-                            rooms.get(room).remove(
-                                    connectedPlayers.get(client)
-                                    );
+                            Room roomInstance = rooms.get(room);
+                            roomInstance.players.remove(connectedPlayers.get(client));
+                            String response = String.format("GG|LEFT_ROOM|%s\n", room);
+                            joueur.send(response);
                         }
                         System.out.println("LEAVE_ROOM");
                         break;
 
                     case "START_GAME":
                         String nomSalle = parts[2];
-                        List<PlayerInfo> joueurs = rooms.get(nomSalle);
+                        List<PlayerInfo> joueurs = rooms.get(nomSalle).players;
 
                         if (joueurs != null) {
 

@@ -61,7 +61,7 @@ public class GameController implements P2PManager.GameEventListener {
 
     private GameLogic      gameLogic;
     private final GameState      gameState;
-    private final P2PManager     p2pManager;
+    private P2PManager     p2pManager;
     private final GameUIListener uiListener;
 
     // -----------------------------------------------------------------------
@@ -69,11 +69,21 @@ public class GameController implements P2PManager.GameEventListener {
     // -----------------------------------------------------------------------
 
     public GameController(String playerName,
+                          GameUIListener uiListener) {
+        this.gameState   = new GameState(playerName);
+        this.uiListener  = uiListener;
+    }
+
+    public GameController(String playerName,
                           P2PManager p2pManager,
                           GameUIListener uiListener) {
         this.gameState   = new GameState(playerName);
         this.p2pManager  = p2pManager;
         this.uiListener  = uiListener;
+    }
+
+    public void setP2PManager(P2PManager manager) {
+        this.p2pManager = manager;
     }
 
     // -----------------------------------------------------------------------

@@ -4,44 +4,67 @@ import com.guessgame.client.manager.NetworkManager;
 import com.guessgame.client.manager.RoomManager;
 
 import com.guessgame.client.p2p.P2PManager;
+import com.guessgame.client.logic.GameController;
+
+import java.util.Arrays;
+
+class DummyUI implements GameController.GameUIListener {
+    final String playerName;
+    DummyUI(String name) { this.playerName = name; }
+
+    @Override public void onFeedbackReceived(int c, int p) {
+    System.out.println("[" + playerName + "-UI] Feedback reçu : couleurs=" + c + " positions=" + p);
+    }
+    @Override public void onWinner(String name) {
+    System.out.println("[" + playerName + "-UI] Gagnant : " + name);
+    }
+    @Override public void onGameOver(String[] secret) {
+    System.out.println("[" + playerName + "-UI] Game over. Secret=" + Arrays.toString(secret));
+    }
+    @Override public void onNewGame(boolean isHolder, String holder) {
+    System.out.println("[" + playerName + "-UI] Nouvelle partie. Détenteur=" + holder);
+    }
+    @Override public void onSecretNeeded() {
+    System.out.println("[" + playerName + "-UI] Vous devez choisir le secret !");
+    }
+    @Override public void onGuessNeeded(int remaining) {
+    System.out.println("[" + playerName + "-UI] À vous de deviner ! Tentatives restantes=" + remaining);
+    }
+    @Override public void displayMessage(String msg) {
+    System.out.println("[" + playerName + "-UI] " + msg);
+    }
+}
 
 public class ServerCommand {
     public static class Connect implements Command {
-        private Class<? extends Response> responseClass = ServerResponse.Connected.class;
-        Response response;
-
-        private String player_name;
+        private String playerName;
 
         public Connect() {}
 
         @Override
         public void setArgs(String[] args) {
-            player_name = args[0];
+            playerName = args[0];
         }
 
         @Override
         public void execute() {
             NetworkManager.getInstance().setConnectionInfo("localhost", 8080);
             NetworkManager.getInstance().connect();
-            RoomManager.getInstance().setClientName(player_name);
-        }
-
-        public void setResponse(Response response) {
-            if (!responseClass.isInstance(response)) {
-                throw new IllegalArgumentException("Invalid response type");
-            }
-            this.response = response;
+            RoomManager.getInstance().setClientName(playerName);
         }
 
         @Override
         public String dump() {
             try {
-                RoomManager.getInstance().p2pManager = new P2PManager(player_name, null);
+                RoomManager rm = RoomManager.getInstance();
+                rm.gameController = new GameController(playerName, rm.p2pManager, new DummyUI(playerName));
+                rm.p2pManager = new P2PManager(playerName, rm.gameController);
+                rm.gameController.setP2PManager(rm.p2pManager);
             } catch (Exception e) {
                 return "";
             }
             int port = RoomManager.getInstance().p2pManager.getListeningPort();
-            String command = String.format("GG|CONNECT|%s|%d\n", player_name, port);
+            String command = String.format("GG|CONNECT|%s|%d\n", playerName, port);
             return command;
         }
     }
@@ -49,21 +72,18 @@ public class ServerCommand {
 
 
     public static class CreateRoom implements Command {
-        private Class<? extends Response> responseClass = ServerResponse.RoomCreated.class;
-        Response response;
-
-        private String room_name;
-        private int max_players;
-        private int max_rounds;
+        private String roomName;
+        private int maxPlayers;
+        private int maxRounds;
 
         public CreateRoom() {}
 
         @Override
         public void setArgs(String[] args) {
             try {
-                room_name = args[0];
-                max_players = Integer.parseInt(args[1]);
-                max_rounds = Integer.parseInt(args[2]);
+                roomName = args[0];
+                maxPlayers = Integer.parseInt(args[1]);
+                maxRounds = Integer.parseInt(args[2]);
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Invalid number format for max_players or max_rounds");
             } catch (ArrayIndexOutOfBoundsException e) {
@@ -73,20 +93,12 @@ public class ServerCommand {
 
         @Override
         public void execute() {
-            RoomManager.getInstance().createRoom(RoomManager.getInstance().new Room(room_name, max_players, max_rounds));
-        }
-
-        @Override
-        public void setResponse(Response response) {
-            if (!responseClass.isInstance(response)) {
-                throw new IllegalArgumentException("Invalid response type");
-            }
-            this.response = response;
+            RoomManager.getInstance().createRoom(roomName, maxPlayers, maxRounds);
         }
 
         @Override
         public String dump() {
-            String command = String.format("GG|CREATE_ROOM|%s|%d|%d\n", room_name, max_players, max_rounds);
+            String command = String.format("GG|CREATE_ROOM|%s|%d|%d\n", roomName, maxPlayers, maxRounds);
             return command;
         }
     }
@@ -94,9 +106,6 @@ public class ServerCommand {
 
 
     public static class ListRoom implements Command {
-        private Class<? extends Response> responseClass = ServerResponse.RoomList.class;
-        Response response;
-
         public ListRoom() {}
 
         @Override
@@ -104,14 +113,6 @@ public class ServerCommand {
 
         @Override
         public void execute() {}
-
-        @Override
-        public void setResponse(Response response) {
-            if (!responseClass.isInstance(response)) {
-                throw new IllegalArgumentException("Invalid response type");
-            }
-            this.response = response;
-        }
 
         @Override
         public String dump() {
@@ -123,9 +124,6 @@ public class ServerCommand {
 
 
     public static class JoinRoom implements Command {
-        private Class<? extends Response> responseClass = ServerResponse.RoomJoined.class;
-        Response response;
-
         private String room_name;
 
         public JoinRoom() {}
@@ -141,15 +139,6 @@ public class ServerCommand {
 
         @Override
         public void execute() {
-            RoomManager.getInstance().joinRoom(room_name);
-        }
-
-        @Override
-        public void setResponse(Response response) {
-            if (!responseClass.isInstance(response)) {
-                throw new IllegalArgumentException("Invalid response type");
-            }
-            this.response = response;
         }
 
         @Override
@@ -162,9 +151,6 @@ public class ServerCommand {
 
 
     public static class LeaveRoom implements Command {
-        private Class<? extends Response> responseClass = ServerResponse.RoomLeft.class;
-        Response response;
-
         private String room_name;
 
         public LeaveRoom() {}
@@ -184,14 +170,6 @@ public class ServerCommand {
         }
 
         @Override
-        public void setResponse(Response response) {
-            if (!responseClass.isInstance(response)) {
-                throw new IllegalArgumentException("Invalid response type");
-            }
-            this.response = response;
-        }
-
-        @Override
         public String dump() {
             String command = String.format("GG|LEAVE_ROOM|%s\n", room_name);
             return command;
@@ -201,9 +179,6 @@ public class ServerCommand {
 
 
     public static class KickPlayer implements Command {
-        private Class<? extends Response> responseClass = ServerResponse.PlayerKicked.class;
-        Response response;
-
         private String room_name;
         private String player_name;
 
@@ -223,14 +198,6 @@ public class ServerCommand {
         public void execute() {}
 
         @Override
-        public void setResponse(Response response) {
-            if (!responseClass.isInstance(response)) {
-                throw new IllegalArgumentException("Invalid response type");
-            }
-            this.response = response;
-        }
-
-        @Override
         public String dump() {
             String command = String.format("GG|KICK_PLAYER|%s|%s\n", room_name, player_name);
             return command;
@@ -240,9 +207,6 @@ public class ServerCommand {
 
 
     public static class StartGame implements Command {
-        private Class<? extends Response> responseClass = ServerResponse.GameStarted.class;
-        Response response;
-
         private String room_name;
 
         public StartGame() {}
@@ -260,14 +224,6 @@ public class ServerCommand {
         public void execute() {}
 
         @Override
-        public void setResponse(Response response) {
-            if (!responseClass.isInstance(response)) {
-                throw new IllegalArgumentException("Invalid response type");
-            }
-            this.response = response;
-        }
-
-        @Override
         public String dump() {
             String command = String.format("GG|START_GAME|%s\n", room_name);
             return command;
@@ -277,9 +233,6 @@ public class ServerCommand {
 
 
     public static class PlayServer implements Command {
-        private Class<? extends Response> responseClass = ServerResponse.ServerGameStarted.class;
-        Response response;
-
         private int max_rounds;
 
         public PlayServer() {}
@@ -299,27 +252,44 @@ public class ServerCommand {
         public void execute() {}
 
         @Override
-        public void setResponse(Response response) {
-            if (!responseClass.isInstance(response)) {
-                throw new IllegalArgumentException("Invalid response type");
-            }
-            this.response = response;
-        }
-
-        @Override
         public String dump() {
             String command = String.format("GG|PLAY_SERVER|%d\n", max_rounds);
             return command;
         }
     }
-    // Create other game commands
 
 
 
 
-    //
-    public static class GuessSecret implements Command {
-        public GuessSecret() {}
+
+
+    public static class SetSecret implements Command {
+        public SetSecret() {}
+
+        private String[] secret;
+
+        @Override
+        public void setArgs(String[] args) {
+            try {
+                secret = args;
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw new IllegalArgumentException("Not enough arguments for StartGame command");
+            }
+        }
+
+        @Override
+        public void execute() {
+            RoomManager.getInstance().gameController.setSecret(secret);
+        }
+
+        @Override
+        public String dump() {
+            return null;
+        }
+    }
+
+    public static class Guess implements Command {
+        public Guess() {}
 
         private String[] guess;
 
@@ -334,16 +304,12 @@ public class ServerCommand {
 
         @Override
         public void execute() {
-            RoomManager.getInstance().getHostRoom().gameController.sendGuess(guess);
-        }
-
-        @Override
-        public void setResponse(Response response) {
+            RoomManager.getInstance().gameController.sendGuess(guess);
         }
 
         @Override
         public String dump() {
-            return "";
+            return null;
         }
     }
 }

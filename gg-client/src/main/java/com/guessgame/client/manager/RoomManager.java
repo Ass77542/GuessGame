@@ -2,7 +2,6 @@ package com.guessgame.client.manager;
 
 import java.util.Vector;
 
-import com.guessgame.client.logic.GameLogic;
 import com.guessgame.client.logic.GameController;
 import com.guessgame.client.p2p.P2PManager;
 
@@ -39,42 +38,15 @@ class DummyUI implements GameController.GameUIListener {
 public class RoomManager {
     private String clientName;
     public P2PManager p2pManager;
+    public GameController gameController;
 
-    public class Room {
-        public String name;
-        public int maxPlayers;
-        public int maxRounds;
-        public GameLogic gameLogic;
-        public GameController gameController;
+    public String roomName;
+    public int maxPlayers;
+    public int maxRounds;
 
-        public Room(String name, int maxPlayers, int maxRounds) {
-            this.name = name;
-            this.maxPlayers = maxPlayers;
-            this.maxRounds = maxRounds;
-            gameLogic = new GameLogic(maxRounds);
-
-            gameController = new GameController("oui", p2pManager, new DummyUI("oui") {
-            });
-
-
-
-
-
-        }
-
-        public void initClient() {
-
-        }
-    };
-
-    private static RoomManager instance;
-
-    private Vector<String> rooms = new Vector<>();
-    private String currentRoom;
-
-    private Room hostRoom;
     private boolean isHost;
 
+    private static RoomManager instance;
     private RoomManager() {}
 
     public static RoomManager getInstance() {
@@ -84,8 +56,30 @@ public class RoomManager {
         return instance;
     }
 
-    public Room getHostRoom() {
-        return hostRoom;
+    public String getRoomName() {
+        return roomName;
+    }
+
+    public int getMaxPlayers() {
+        return maxPlayers;
+    }
+
+    public int getMaxRounds() {
+        return maxRounds;
+    }
+
+    public void joinRoom(String name, int maxPlayers, int maxRounds) {
+        this.roomName = name;
+        this.maxPlayers = maxPlayers;
+        this.maxRounds = maxRounds;
+        isHost = false;
+    }
+
+    public void createRoom(String name, int maxPlayers, int maxRounds) {
+        this.roomName = name;
+        this.maxPlayers = maxPlayers;
+        this.maxRounds = maxRounds;
+        isHost = true;
     }
 
     public String getClientName() {
@@ -94,49 +88,5 @@ public class RoomManager {
 
     public void setClientName(String name) {
         this.clientName = name;
-    }
-
-    public String createRoom(Room room) {
-        if (hostRoom != null) {
-            return "Already hosting a room.";
-        }
-        hostRoom = room;
-        isHost = true;
-        return null;
-    }
-
-    public void addRoom(String roomName) {
-        if (rooms.contains(roomName)) {
-            return;
-        }
-        rooms.add(roomName);
-    }
-
-    public void removeRoom(String roomName) {
-        rooms.remove(roomName);
-    }
-
-    public void clearRoom() {
-        rooms.clear();
-    }
-
-    public boolean roomExists(String roomName) {
-        return rooms.contains(roomName);
-    }
-
-    public Vector<String> getRooms() {
-        return rooms;
-    }
-
-    public void joinRoom(String roomName) {
-        if (!rooms.contains(roomName)) {
-            //throw new IllegalArgumentException("Room does not exist");
-        }
-        currentRoom = roomName;
-        isHost = false;
-    }
-
-    public void leaveRoom() {
-        currentRoom = null;
     }
 };
