@@ -166,7 +166,6 @@ public class ServerCommand {
 
         @Override
         public void execute() {
-            RoomManager.getInstance().leaveRoom();
         }
 
         @Override
