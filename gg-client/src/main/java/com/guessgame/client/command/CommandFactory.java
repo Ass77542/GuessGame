@@ -20,6 +20,9 @@ public class CommandFactory {
         commandMap.put("START_GAME", ServerCommand.StartGame.class);
         commandMap.put("PLAY_SERVER", ServerCommand.PlayServer.class);
 
+        commandMap.put("SET_SECRET", ServerCommand.SetSecret.class);
+        commandMap.put("GUESS", ServerCommand.Guess.class);
+
 
         this.responseMap = new HashMap<>();
         responseMap.put("CONNECTED", ServerResponse.Connected.class);

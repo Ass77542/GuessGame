@@ -51,7 +51,10 @@ public class App
         }
         Command command = CommandFactory.getInstance().createCommand(parts[1], args);
         command.execute();
-        NetworkManager.getInstance().sendCommand(command.dump());
+        String commandStr = command.dump();
+        if (commandStr != null) {
+            NetworkManager.getInstance().sendCommand(commandStr);
+        }
     }
 
     public static void parseResponse(String response) {

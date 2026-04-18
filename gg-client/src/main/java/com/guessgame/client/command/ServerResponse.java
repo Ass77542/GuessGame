@@ -44,12 +44,11 @@ public class ServerResponse {
         }
         @Override
         public void execute() {
-            StringBuilder sb = new StringBuilder("Available rooms:\n");
-            RoomManager.getInstance().clearRoom();
+            StringBuilder sb = new StringBuilder("Available rooms: {");
             for (String room : rooms) {
-                sb.append("- ").append(room).append("\n");
-                RoomManager.getInstance().addRoom(room);
+                sb.append(" ").append(room);
             }
+            sb.append(" }");
             Logger.getInstance().info(sb.toString());
         }
     }
@@ -57,12 +56,27 @@ public class ServerResponse {
 
 
     public static class RoomJoined implements Response {
+        private String roomName;
+        private int maxPlayers;
+        private int maxRounds;
         public RoomJoined(/* let empty */) {}
 
         @Override
-        public void setArgs(String[] args) {}
+        public void setArgs(String[] args) {
+            try {
+                roomName = args[0];
+                maxPlayers = Integer.parseInt(args[1]);
+                maxRounds = Integer.parseInt(args[2]);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid number format for max_players or max_rounds");
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw new IllegalArgumentException("Not enough arguments for CreateRoom command");
+            }
+        }
         @Override
         public void execute() {
+            RoomManager rm = RoomManager.getInstance();
+            rm.joinRoom(roomName, maxPlayers, maxRounds);
             Logger.getInstance().info("Joined room successfully.");
         }
     };
@@ -110,14 +124,12 @@ public class ServerResponse {
         }
         @Override
         public void execute() {
-            RoomManager.getInstance().p2pManager.startAccepting();
-            Logger.getInstance().info("Game started with players: " + players);
-            List<String> playerEntries = Arrays.asList(players.split(","));
-            for (String player: playerEntries) {
-                Logger.getInstance().info("Player: " + player);
-            }
+            RoomManager rm = RoomManager.getInstance();
+            rm.p2pManager.startAccepting();
 
-            RoomManager.getInstance().p2pManager.connectToPlayers(playerEntries);
+            List<String> playerEntries = Arrays.asList(players.split(","));
+
+            rm.gameController.startGame(roomName, playerEntries, rm.getMaxRounds());
         }
      };
 
