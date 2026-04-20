@@ -24,4 +24,8 @@ public class PlayerInfo {
 
         out.println(msg);
     }
+
+    public String getUsername() {
+        return username;
+    }
 }

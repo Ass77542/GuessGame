@@ -65,27 +65,29 @@ public class Main {
                 String command = parts[1];
                 switch (command) {
                     case "CONNECT":
-                        String username = parts[2];
-                        int p2pPort = Integer.parseInt(parts[3]);
-                        String ip = client.getInetAddress().getHostAddress();
-                        PlayerInfo player = new PlayerInfo(
-                                username,
-                                ip,
-                                p2pPort,
-                                client
-                                );
-                        connectedPlayers.put(client, player);
+                        {
+                            String username = parts[2];
+                            int p2pPort = Integer.parseInt(parts[3]);
+                            String ip = client.getInetAddress().getHostAddress();
+                            PlayerInfo player = new PlayerInfo(
+                                    username,
+                                    ip,
+                                    p2pPort,
+                                    client
+                                    );
+                            connectedPlayers.put(client, player);
 
-                        System.out.println(
-                                "CONNECT : "
-                                + username
-                                + " / "
-                                + ip
-                                + ":"
-                                + p2pPort
-                                );
+                            System.out.println(
+                                    "CONNECT : "
+                                    + username
+                                    + " / "
+                                    + ip
+                                    + ":"
+                                    + p2pPort
+                                    );
 
-                        break;
+                            break;
+                        }
 
                     case "CREATE_ROOM":
                         String roomCreate = parts[2];
@@ -129,15 +131,39 @@ public class Main {
                         break;
 
                     case "LEAVE_ROOM":
-                        PlayerInfo joueur = connectedPlayers.get(client);
-                        for (String room : rooms.keySet()) {
-                            Room roomInstance = rooms.get(room);
-                            roomInstance.players.remove(connectedPlayers.get(client));
-                            String response = String.format("GG|LEFT_ROOM|%s\n", room);
-                            joueur.send(response);
+                        {
+                            PlayerInfo joueur = connectedPlayers.get(client);
+                            for (String room : rooms.keySet()) {
+                                Room roomInstance = rooms.get(room);
+                                roomInstance.players.remove(connectedPlayers.get(client));
+                                String response = String.format("GG|LEFT_ROOM|%s", room);
+                                joueur.send(response);
+                            }
+                            System.out.println("LEAVE_ROOM");
+                            break;
                         }
-                        System.out.println("LEAVE_ROOM");
-                        break;
+
+                    case "KICK_PLAYER":
+                        {
+                            String roomKick = parts[2];
+                            String playerToKick = parts[3];
+                            if (rooms.containsKey(roomKick)) {
+                                Room room = rooms.get(roomKick);
+                                PlayerInfo toKick = null;
+                                for (PlayerInfo p : room.players) {
+                                    if (p.username.equals(playerToKick)) {
+                                        toKick = p;
+                                        break;
+                                    }
+                                }
+                                if (toKick != null) {
+                                    room.players.remove(toKick);
+                                    String response = String.format("GG|LEFT_ROOM|%s", roomKick);
+                                    toKick.send(response);
+                                }
+                            }
+                            break;
+                        }
 
                     case "START_GAME":
                         String nomSalle = parts[2];
@@ -168,11 +194,21 @@ public class Main {
                         break;
 
                     case "LIST_ROOMS":
-                        System.out.println(
-                                "LIST_ROOMS : "
-                                + rooms.keySet()
-                                );
-                        break;
+                        {
+                            PlayerInfo joueur = connectedPlayers.get(client);
+                            StringBuilder sb = new StringBuilder();
+                            sb.append("GG|ROOM_LIST");
+                            for (String roomName : rooms.keySet()) {
+                                sb.append("|").append(roomName);
+                            }
+                            joueur.send(sb.toString());
+
+                            System.out.println(
+                                    "LIST_ROOMS : "
+                                    + rooms.keySet()
+                                    );
+                            break;
+                        }
 
                     default:
                         System.out.println(
