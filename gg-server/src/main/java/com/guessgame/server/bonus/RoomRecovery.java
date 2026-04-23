@@ -56,14 +56,14 @@ public class RoomRecovery {
         for (PlayerInfo player : remainingPlayers) {
             try {
                 player.send(cancelMsg);
-                System.out.println("[RoomRecovery] Notifié : " + player.username);
+                System.out.println("[RoomRecovery] Notifié : " + player.getUsername());
 
                 if (gameCancelMsg != null) {
                     player.send(gameCancelMsg);
-                    System.out.println("[RoomRecovery] Partie annulée notifiée à : " + player.username);
+                    System.out.println("[RoomRecovery] Partie annulée notifiée à : " + player.getUsername());
                 }
             } catch (Exception e) {
-                System.err.println("[RoomRecovery] Erreur notification " + player.username
+                System.err.println("[RoomRecovery] Erreur notification " + player.getUsername()
                         + " : " + e.getMessage());
             }
         }
